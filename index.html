@@ -54,13 +54,18 @@
               <p class="eyebrow">YOUR DAILY WEATHER</p>
               <h1 id="welcome-title">A little sunshine,<br />wherever you are.</h1>
             </div>
-            <div class="today-chip">
-              <span class="pulse-dot" aria-hidden="true"></span>
-              <span>Live conditions</span>
+            <div class="welcome-actions">
+              <div class="today-chip">
+                <span class="pulse-dot" aria-hidden="true"></span>
+                <span>Live conditions</span>
+              </div>
+              <button class="location-button" id="location-button" type="button">
+                <span aria-hidden="true">⌖</span> Use my location
+              </button>
             </div>
           </section>
 
-          <section class="current-card glass-card" aria-labelledby="city-name">
+          <section class="current-card glass-card" id="current-card" aria-labelledby="city-name">
             <div class="current-top">
               <div>
                 <p class="eyebrow eyebrow-light">CURRENT WEATHER</p>
@@ -70,6 +75,7 @@
               </div>
               <div class="weather-icon" id="current-icon" aria-hidden="true">☀️</div>
             </div>
+            <button class="weather-favourite" id="weather-favourite" type="button" aria-label="Add current city to favourites" aria-pressed="false">☆</button>
             <div class="current-bottom">
               <div class="temperature-block">
                 <span class="temperature" id="current-temperature">—</span>

@@ -104,7 +104,10 @@ export function renderFavourites(favourites, selectedCity, onSelect, temperature
     const item = createElement("li");
     const button = createElement("button", "favourite-button");
     button.type = "button";
-    button.setAttribute("aria-current", String(favourite.city === selectedCity));
+    const isCurrent = typeof selectedCity === "object" && selectedCity
+      ? favourite.latitude === selectedCity.latitude && favourite.longitude === selectedCity.longitude
+      : favourite.city === selectedCity;
+    button.setAttribute("aria-current", String(isCurrent));
     button.addEventListener("click", () => onSelect(favourite.city, favourite));
 
     const icon = createElement("span", "favourite-icon", favourite.icon);
@@ -161,10 +164,50 @@ export function updateUnitToggle(unit) {
   document.querySelector("#fahrenheit-button").setAttribute("aria-pressed", String(unit === "F"));
 }
 
+export function setLoading(isLoading) {
+  const currentCard = document.querySelector("#current-card");
+  const forecastGrid = document.querySelector("#forecast-grid");
+  currentCard.classList.toggle("is-loading", isLoading);
+  forecastGrid.classList.toggle("is-loading", isLoading);
+  document.querySelector("#status-message").classList.toggle("is-loading", isLoading);
+  currentCard.setAttribute("aria-busy", String(isLoading));
+  forecastGrid.setAttribute("aria-busy", String(isLoading));
+  document.querySelector("#weather-favourite").disabled = isLoading;
+  document.querySelector("#location-button").disabled = isLoading;
+
+  if (isLoading && forecastGrid.children.length === 0) {
+    const skeletonCards = Array.from({ length: 7 }, () => {
+      const card = createElement("article", "forecast-day skeleton-card");
+      card.setAttribute("aria-hidden", "true");
+      card.append(
+        createElement("span", "skeleton-block skeleton-day"),
+        createElement("span", "skeleton-block skeleton-icon"),
+        createElement("span", "skeleton-block skeleton-temperatures"),
+      );
+      return card;
+    });
+    forecastGrid.append(...skeletonCards);
+  } else if (!isLoading) {
+    forecastGrid.querySelectorAll(".skeleton-card").forEach((card) => card.remove());
+  }
+}
+
+export function updateWeatherFavourite(isFavourite, disabled = false) {
+  const button = document.querySelector("#weather-favourite");
+  button.textContent = isFavourite ? "★" : "☆";
+  button.setAttribute("aria-pressed", String(isFavourite));
+  button.setAttribute(
+    "aria-label",
+    isFavourite ? "Remove current city from favourites" : "Add current city to favourites",
+  );
+  button.disabled = disabled;
+}
+
 export function setStatus(message = "", isError = false) {
   const status = document.querySelector("#status-message");
   const error = document.querySelector("#error-message");
   status.textContent = isError ? "" : message;
+  status.classList.remove("is-loading");
   error.textContent = isError ? message : "";
 }
 
