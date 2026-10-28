@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A calm, clear view of today's weather and the week ahead."
+    />
+    <title>Solstice Weather</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script type="module" src="js/app.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Solstice Weather home">
+          <span class="brand-mark" aria-hidden="true">✳</span>
+          <span>solstice<span class="brand-light">weather</span></span>
+        </a>
+
+        <form class="search-form" id="search-form" role="search">
+          <label class="sr-only" for="city-search">Search for a city</label>
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input
+            id="city-search"
+            name="city"
+            type="search"
+            placeholder="Search any city..."
+            autocomplete="off"
+            required
+          />
+          <button type="submit">Explore <span aria-hidden="true">↗</span></button>
+        </form>
+
+        <div class="header-date" id="header-date" aria-label="Today's date"></div>
+      </header>
+
+      <main class="dashboard">
+        <div class="main-column">
+          <section class="welcome-row" aria-labelledby="welcome-title">
+            <div>
+              <p class="eyebrow">YOUR DAILY WEATHER</p>
+              <h1 id="welcome-title">A little sunshine,<br />wherever you are.</h1>
+            </div>
+            <div class="today-chip">
+              <span class="pulse-dot" aria-hidden="true"></span>
+              <span>Sample conditions</span>
+            </div>
+          </section>
+
+          <section class="current-card glass-card" aria-labelledby="city-name">
+            <div class="current-top">
+              <div>
+                <p class="eyebrow eyebrow-light">CURRENT WEATHER</p>
+                <h2 id="city-name">Lisbon</h2>
+                <p class="location-line"><span aria-hidden="true">⌖</span> <span id="city-country">Portugal</span></p>
+              </div>
+              <div class="weather-icon" id="current-icon" aria-hidden="true">☀️</div>
+            </div>
+            <div class="current-bottom">
+              <div class="temperature-block">
+                <span class="temperature" id="current-temperature">22°</span>
+                <span class="condition" id="current-condition">Mostly sunny</span>
+              </div>
+              <div class="weather-details">
+                <div class="detail-item">
+                  <span class="detail-icon" aria-hidden="true">↗</span>
+                  <span><span class="detail-label">WIND</span><strong id="current-wind">12 km/h</strong></span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-icon detail-clock" aria-hidden="true">◷</span>
+                  <span><span class="detail-label">LOCAL TIME</span><strong id="local-time">--:--</strong></span>
+                </div>
+              </div>
+            </div>
+            <div class="sun-glow" aria-hidden="true"></div>
+          </section>
+
+          <section class="forecast-section" aria-labelledby="forecast-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">PLAN AHEAD</p>
+                <h2 id="forecast-title">The next 7 days</h2>
+              </div>
+              <span class="forecast-caption">A little look at what's coming</span>
+            </div>
+            <div class="forecast-grid" id="forecast-grid" aria-label="7-day forecast"></div>
+          </section>
+        </div>
+
+        <aside class="sidebar">
+          <section class="favourites-card glass-card" aria-labelledby="favourites-title">
+            <div class="section-heading sidebar-heading">
+              <div>
+                <p class="eyebrow eyebrow-light">YOUR PLACES</p>
+                <h2 id="favourites-title">Favourites</h2>
+              </div>
+              <span class="heart-badge" aria-hidden="true">♡</span>
+            </div>
+            <p class="sidebar-intro">Keep an eye on the places you love.</p>
+            <ul class="favourites-list" id="favourites-list"></ul>
+            <button class="add-favourite" id="favourite-button" type="button">
+              <span aria-hidden="true">＋</span> Add current city
+            </button>
+            <p class="favourite-note">Your saved places stay right here in this browser.</p>
+          </section>
+
+          <section class="quote-card" aria-label="Weather note">
+            <span class="quote-sparkle" aria-hidden="true">✦</span>
+            <p>Make a little room for sunshine, whatever the forecast brings.</p>
+            <span class="quote-author">A NOTE FOR TODAY</span>
+          </section>
+        </aside>
+      </main>
+
+      <div class="status-message" id="status-message" role="status" aria-live="polite"></div>
+      <div class="status-message status-error" id="error-message" role="alert"></div>
+
+      <footer class="page-footer">
+        <span>SAMPLE FORECAST DATA · NO LIVE WEATHER SERVICE CONNECTED</span>
+        <span>☼ &nbsp; TAKE THE DAY AS IT COMES</span>
+      </footer>
+    </div>
+  </body>
+</html>
