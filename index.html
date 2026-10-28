@@ -25,19 +25,24 @@
           <span>solstice<span class="brand-light">weather</span></span>
         </a>
 
-        <form class="search-form" id="search-form" role="search">
-          <label class="sr-only" for="city-search">Search for a city</label>
-          <span class="search-icon" aria-hidden="true">⌕</span>
-          <input
-            id="city-search"
-            name="city"
-            type="search"
-            placeholder="Search any city..."
-            autocomplete="off"
-            required
-          />
-          <button type="submit">Explore <span aria-hidden="true">↗</span></button>
-        </form>
+        <div class="search-container">
+          <form class="search-form" id="search-form" role="search">
+            <label class="sr-only" for="city-search">Search for a city</label>
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input
+              id="city-search"
+              name="city"
+              type="search"
+              placeholder="Search any city..."
+              autocomplete="off"
+              aria-controls="city-results"
+              aria-expanded="false"
+              required
+            />
+            <button type="submit">Explore <span aria-hidden="true">↗</span></button>
+          </form>
+          <ul class="city-results" id="city-results" aria-label="Matching cities" hidden></ul>
+        </div>
 
         <div class="header-date" id="header-date" aria-label="Today's date"></div>
       </header>
@@ -94,7 +99,13 @@
                 <p class="eyebrow">PLAN AHEAD</p>
                 <h2 id="forecast-title">The next 7 days</h2>
               </div>
-              <span class="forecast-caption">A little look at what's coming</span>
+              <div class="forecast-tools">
+                <span class="forecast-caption">A little look at what's coming</span>
+                <div class="unit-toggle" role="group" aria-label="Temperature units">
+                  <button class="unit-button" id="celsius-button" type="button" aria-pressed="true">°C</button>
+                  <button class="unit-button" id="fahrenheit-button" type="button" aria-pressed="false">°F</button>
+                </div>
+              </div>
             </div>
             <div class="forecast-grid" id="forecast-grid" aria-label="7-day forecast"></div>
           </section>

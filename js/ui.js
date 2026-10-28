@@ -9,7 +9,7 @@ function createElement(tagName, className, text) {
   return element;
 }
 
-export function renderWeather(weather) {
+export function renderWeather(weather, temperatureUnit = "C") {
   document.querySelector("#city-name").textContent = weather.city;
   document.querySelector("#city-country").textContent = weather.country;
   document.querySelector("#city-coordinate").textContent = [
@@ -18,7 +18,7 @@ export function renderWeather(weather) {
     formatTimeZone(weather.timeZone),
   ].join(" · ");
   document.querySelector("#current-temperature").textContent =
-    `${Math.round(weather.temperature)}${weather.temperatureUnit}`;
+    `${Math.round(convertTemperature(weather.temperature, temperatureUnit))}°${temperatureUnit}`;
   document.querySelector("#current-condition").textContent = weather.condition;
   document.querySelector("#current-icon").textContent = weather.icon;
   document.querySelector("#current-wind").textContent = `${weather.wind} ${weather.windUnit}`;
@@ -30,23 +30,31 @@ export function renderWeather(weather) {
     ...weather.forecast.map((day, index) => {
       const card = createElement("article", "forecast-day");
       const forecastDate = new Date(`${day.date}T12:00:00`);
-      const dayName = index === 0
-        ? "Today"
-        : new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(forecastDate);
+      const weekday = new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(forecastDate);
+      const dayName = index === 0 ? `Today, ${weekday}` : weekday;
       const dayLabel = createElement("span", "forecast-name", dayName);
       const weatherIcon = createElement("span", "forecast-icon", day.icon);
       weatherIcon.setAttribute("aria-hidden", "true");
       weatherIcon.title = day.condition;
       const temperatures = createElement("div", "forecast-temperatures");
+      const high = Math.round(convertTemperature(day.high, temperatureUnit));
+      const low = Math.round(convertTemperature(day.low, temperatureUnit));
       temperatures.append(
-        createElement("span", "", `${Math.round(day.high)}${day.temperatureUnit}`),
-        createElement("span", "forecast-low", `${Math.round(day.low)}${day.temperatureUnit}`),
+        createElement("span", "", `${high}°${temperatureUnit}`),
+        createElement("span", "forecast-low", `${low}°${temperatureUnit}`),
       );
-      card.setAttribute("aria-label", `${dayName}: ${day.condition}, high ${day.high}, low ${day.low}`);
+      card.setAttribute(
+        "aria-label",
+        `${dayName}: ${day.condition}, high ${high}°${temperatureUnit}, low ${low}°${temperatureUnit}`,
+      );
       card.append(dayLabel, weatherIcon, temperatures);
       return card;
     }),
   );
+}
+
+function convertTemperature(celsius, unit) {
+  return unit === "F" ? (celsius * 9) / 5 + 32 : celsius;
 }
 
 function formatCoordinate(value, positiveDirection, negativeDirection) {
@@ -81,7 +89,7 @@ function renderLocalTime(timeZone) {
   document.querySelector("#local-time").textContent = formatter.format(new Date());
 }
 
-export function renderFavourites(favourites, selectedCity, onSelect) {
+export function renderFavourites(favourites, selectedCity, onSelect, temperatureUnit = "C") {
   const list = document.querySelector("#favourites-list");
   list.replaceChildren();
 
@@ -97,7 +105,7 @@ export function renderFavourites(favourites, selectedCity, onSelect) {
     const button = createElement("button", "favourite-button");
     button.type = "button";
     button.setAttribute("aria-current", String(favourite.city === selectedCity));
-    button.addEventListener("click", () => onSelect(favourite.city));
+    button.addEventListener("click", () => onSelect(favourite.city, favourite));
 
     const icon = createElement("span", "favourite-icon", favourite.icon);
     icon.setAttribute("aria-hidden", "true");
@@ -112,12 +120,45 @@ export function renderFavourites(favourites, selectedCity, onSelect) {
       createElement(
         "span",
         "favourite-temperature",
-        `${Math.round(favourite.temperature)}${favourite.temperatureUnit ?? "°"}`,
+        `${Math.round(convertTemperature(favourite.temperature, temperatureUnit))}°${temperatureUnit}`,
       ),
     );
     item.append(button);
     list.append(item);
   });
+}
+
+export function renderCityResults(cities, onSelect) {
+  const list = document.querySelector("#city-results");
+  list.replaceChildren();
+
+  cities.forEach((city) => {
+    const item = createElement("li");
+    const button = createElement(
+      "button",
+      "city-result-option",
+      [city.name, city.admin1, city.country].filter(Boolean).join(", "),
+    );
+    button.type = "button";
+    button.addEventListener("click", () => onSelect(city));
+    item.append(button);
+    list.append(item);
+  });
+
+  list.hidden = cities.length === 0;
+  document.querySelector("#city-search").setAttribute("aria-expanded", String(cities.length > 0));
+}
+
+export function clearCityResults() {
+  const list = document.querySelector("#city-results");
+  list.replaceChildren();
+  list.hidden = true;
+  document.querySelector("#city-search").setAttribute("aria-expanded", "false");
+}
+
+export function updateUnitToggle(unit) {
+  document.querySelector("#celsius-button").setAttribute("aria-pressed", String(unit === "C"));
+  document.querySelector("#fahrenheit-button").setAttribute("aria-pressed", String(unit === "F"));
 }
 
 export function setStatus(message = "", isError = false) {

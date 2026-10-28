@@ -1,16 +1,29 @@
 import { getForecast, searchCity } from "./api.js";
-import { renderDate, renderFavourites, renderWeather, setStatus } from "./ui.js";
+import {
+  clearCityResults,
+  renderCityResults,
+  renderDate,
+  renderFavourites,
+  renderWeather,
+  setStatus,
+  updateUnitToggle,
+} from "./ui.js";
 import { getWeatherDescription } from "./weatherCodes.js";
 
 const favouritesKey = "solstice-weather-favourites";
+const temperatureUnitKey = "solstice-weather-temperature-unit";
 const searchForm = document.querySelector("#search-form");
 const searchInput = document.querySelector("#city-search");
 const favouriteButton = document.querySelector("#favourite-button");
+const celsiusButton = document.querySelector("#celsius-button");
+const fahrenheitButton = document.querySelector("#fahrenheit-button");
 
 let currentWeather;
 let favourites = loadFavourites();
 let activeRequest = 0;
+let activeController;
 let statusTimeout;
+let temperatureUnit = loadTemperatureUnit();
 
 function loadFavourites() {
   try {
@@ -42,8 +55,32 @@ function saveFavourites() {
   }
 }
 
+function loadTemperatureUnit() {
+  try {
+    const savedUnit = localStorage.getItem(temperatureUnitKey);
+    return savedUnit === "F" ? "F" : "C";
+  } catch (error) {
+    console.error("Could not load the preferred temperature unit.", error);
+    return "C";
+  }
+}
+
+function saveTemperatureUnit() {
+  try {
+    localStorage.setItem(temperatureUnitKey, temperatureUnit);
+  } catch (error) {
+    console.error("Could not save the preferred temperature unit.", error);
+    setStatus("Your browser could not save the temperature preference.", true);
+  }
+}
+
 function updateFavourites() {
-  renderFavourites(favourites, currentWeather?.city, showCity);
+  renderFavourites(
+    favourites,
+    currentWeather?.city,
+    (cityName, favourite) => showCity(cityName, favourite),
+    temperatureUnit,
+  );
   const isFavourite = favourites.some((item) => item.city === currentWeather?.city);
   favouriteButton.disabled = isFavourite;
   const icon = document.createElement("span");
@@ -55,32 +92,54 @@ function updateFavourites() {
   );
 }
 
-async function showCity(query) {
+async function showCity(query, selectedCity = null) {
+  activeController?.abort();
   const requestId = ++activeRequest;
+  const controller = new AbortController();
+  activeController = controller;
   window.clearTimeout(statusTimeout);
+  clearCityResults();
   setStatus("Loading…");
   searchForm.setAttribute("aria-busy", "true");
   try {
-    let cities;
-    try {
-      cities = await searchCity(query);
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : "City search failed. Please try again.");
-    }
-
-    if (requestId !== activeRequest) {
-      return;
-    }
-
-    const city = cities[0];
+    let city = selectedCity &&
+      Number.isFinite(selectedCity.latitude) &&
+      Number.isFinite(selectedCity.longitude)
+      ? {
+          ...selectedCity,
+          name: selectedCity.name ?? selectedCity.city,
+          timezone: selectedCity.timezone ?? selectedCity.timeZone,
+        }
+      : null;
     if (!city) {
-      setStatus(`We couldn't find "${query}". Check the spelling or try another city.`);
-      return;
+      let cities;
+      try {
+        cities = await searchCity(query, { signal: controller.signal });
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "City search failed. Please try again.");
+      }
+
+      if (requestId !== activeRequest) {
+        return;
+      }
+
+      if (!cities.length) {
+        setStatus(`We couldn't find "${query}". Check the spelling or try another city.`);
+        return;
+      }
+
+      if (cities.length > 1) {
+        renderCityResults(cities, (match) => showCity(match.name, match));
+        setStatus(`Choose a location for "${query}".`);
+        return;
+      }
+
+      city = cities[0];
     }
 
     let forecast;
     try {
-      forecast = await getForecast(city.latitude, city.longitude);
+      forecast = await getForecast(city.latitude, city.longitude, { signal: controller.signal });
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : "Weather forecast failed. Please try again.");
     }
@@ -94,11 +153,11 @@ async function showCity(query) {
     const weather = {
       city: city.name,
       country: city.country,
+      admin1: city.admin1,
       latitude: city.latitude,
       longitude: city.longitude,
       timeZone: forecast.timezone ?? city.timezone,
       temperature: current.temperature_2m,
-      temperatureUnit: forecast.current_units.temperature_2m,
       humidity: current.relative_humidity_2m,
       wind: current.wind_speed_10m,
       windUnit: forecast.current_units.wind_speed_10m,
@@ -112,13 +171,12 @@ async function showCity(query) {
           low: forecast.daily.temperature_2m_min[index],
           icon: conditions.emoji,
           condition: conditions.label,
-          temperatureUnit: forecast.daily_units.temperature_2m_max,
         };
       }),
     };
 
     currentWeather = weather;
-    renderWeather(weather);
+    renderWeather(weather, temperatureUnit);
     updateFavourites();
     setStatus(`Showing the forecast for ${weather.city}.`);
     statusTimeout = window.setTimeout(() => setStatus(), 2600);
@@ -131,6 +189,7 @@ async function showCity(query) {
   } finally {
     if (requestId === activeRequest) {
       searchForm.removeAttribute("aria-busy");
+      activeController = undefined;
     }
   }
 }
@@ -142,6 +201,21 @@ searchForm.addEventListener("submit", (event) => {
     showCity(city);
   }
 });
+
+searchInput.addEventListener("input", clearCityResults);
+
+function selectTemperatureUnit(unit) {
+  temperatureUnit = unit;
+  saveTemperatureUnit();
+  updateUnitToggle(temperatureUnit);
+  if (currentWeather) {
+    renderWeather(currentWeather, temperatureUnit);
+    updateFavourites();
+  }
+}
+
+celsiusButton.addEventListener("click", () => selectTemperatureUnit("C"));
+fahrenheitButton.addEventListener("click", () => selectTemperatureUnit("F"));
 
 favouriteButton.addEventListener("click", () => {
   if (!currentWeather || favourites.some((item) => item.city === currentWeather.city)) {
@@ -159,4 +233,13 @@ favouriteButton.addEventListener("click", () => {
 });
 
 renderDate();
-showCity("Lisbon");
+updateUnitToggle(temperatureUnit);
+updateFavourites();
+showCity("Lisbon", {
+  name: "Lisbon",
+  country: "Portugal",
+  admin1: "Lisbon District",
+  latitude: 38.7223,
+  longitude: -9.1393,
+  timezone: "Europe/Lisbon",
+});
