@@ -254,6 +254,12 @@ h1 {
   font-size: 12px;
 }
 
+.location-detail {
+  margin: 5px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 9px;
+}
+
 .location-line > span:first-child {
   margin-right: 4px;
 }

@@ -1,5 +1,6 @@
-import { searchCity } from "./api.js";
+import { getForecast, searchCity } from "./api.js";
 import { renderDate, renderFavourites, renderWeather, setStatus } from "./ui.js";
+import { getWeatherDescription } from "./weatherCodes.js";
 
 const favouritesKey = "solstice-weather-favourites";
 const searchForm = document.querySelector("#search-form");
@@ -57,13 +58,65 @@ function updateFavourites() {
 async function showCity(query) {
   const requestId = ++activeRequest;
   window.clearTimeout(statusTimeout);
-  setStatus("Finding your forecast...");
+  setStatus("Loading…");
   searchForm.setAttribute("aria-busy", "true");
   try {
-    const weather = await searchCity(query);
+    let cities;
+    try {
+      cities = await searchCity(query);
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : "City search failed. Please try again.");
+    }
+
     if (requestId !== activeRequest) {
       return;
     }
+
+    const city = cities[0];
+    if (!city) {
+      setStatus(`We couldn't find "${query}". Check the spelling or try another city.`);
+      return;
+    }
+
+    let forecast;
+    try {
+      forecast = await getForecast(city.latitude, city.longitude);
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : "Weather forecast failed. Please try again.");
+    }
+
+    if (requestId !== activeRequest) {
+      return;
+    }
+
+    const current = forecast.current;
+    const currentConditions = getWeatherDescription(current.weather_code);
+    const weather = {
+      city: city.name,
+      country: city.country,
+      latitude: city.latitude,
+      longitude: city.longitude,
+      timeZone: forecast.timezone ?? city.timezone,
+      temperature: current.temperature_2m,
+      temperatureUnit: forecast.current_units.temperature_2m,
+      humidity: current.relative_humidity_2m,
+      wind: current.wind_speed_10m,
+      windUnit: forecast.current_units.wind_speed_10m,
+      condition: currentConditions.label,
+      icon: currentConditions.emoji,
+      forecast: forecast.daily.time.map((date, index) => {
+        const conditions = getWeatherDescription(forecast.daily.weather_code[index]);
+        return {
+          date,
+          high: forecast.daily.temperature_2m_max[index],
+          low: forecast.daily.temperature_2m_min[index],
+          icon: conditions.emoji,
+          condition: conditions.label,
+          temperatureUnit: forecast.daily_units.temperature_2m_max,
+        };
+      }),
+    };
+
     currentWeather = weather;
     renderWeather(weather);
     updateFavourites();

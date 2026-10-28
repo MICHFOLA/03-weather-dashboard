@@ -1,107 +1,64 @@
-const cityData = {
-  lisbon: {
-    city: "Lisbon",
-    country: "Portugal",
-    temperature: 22,
-    condition: "Mostly sunny",
-    icon: "☀️",
-    wind: 12,
-    timeZone: "Europe/Lisbon",
-    forecast: [
-      [22, 16, "☀️"],
-      [23, 16, "🌤️"],
-      [21, 15, "⛅"],
-      [20, 14, "🌦️"],
-      [22, 15, "☀️"],
-      [24, 17, "☀️"],
-      [23, 17, "🌤️"],
-    ],
-  },
-  tokyo: {
-    city: "Tokyo",
-    country: "Japan",
-    temperature: 19,
-    condition: "Partly cloudy",
-    icon: "⛅",
-    wind: 9,
-    timeZone: "Asia/Tokyo",
-    forecast: [
-      [20, 14, "⛅"],
-      [21, 15, "🌤️"],
-      [18, 13, "🌧️"],
-      [19, 13, "🌦️"],
-      [21, 15, "☀️"],
-      [22, 16, "☀️"],
-      [20, 15, "⛅"],
-    ],
-  },
-  "new york": {
-    city: "New York",
-    country: "United States",
-    temperature: 16,
-    condition: "Breezy",
-    icon: "🌬️",
-    wind: 18,
-    timeZone: "America/New_York",
-    forecast: [
-      [17, 10, "🌤️"],
-      [18, 11, "☀️"],
-      [15, 9, "🌦️"],
-      [14, 8, "🌧️"],
-      [16, 10, "⛅"],
-      [19, 12, "☀️"],
-      [18, 11, "🌤️"],
-    ],
-  },
-  "cape town": {
-    city: "Cape Town",
-    country: "South Africa",
-    temperature: 24,
-    condition: "Clear skies",
-    icon: "☀️",
-    wind: 14,
-    timeZone: "Africa/Johannesburg",
-    forecast: [
-      [24, 17, "☀️"],
-      [23, 16, "🌤️"],
-      [22, 15, "⛅"],
-      [22, 16, "🌤️"],
-      [25, 18, "☀️"],
-      [26, 18, "☀️"],
-      [24, 17, "⛅"],
-    ],
-  },
-};
+const geocodingUrl = "https://geocoding-api.open-meteo.com/v1/search";
+const forecastUrl = "https://api.open-meteo.com/v1/forecast";
 
-const genericForecast = [
-  [21, 15, "🌤️"],
-  [22, 16, "☀️"],
-  [19, 14, "⛅"],
-  [18, 13, "🌦️"],
-  [20, 14, "🌤️"],
-  [23, 16, "☀️"],
-  [22, 16, "⛅"],
-];
+export async function fetchJson(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `Open-Meteo request failed: ${response.status} ${response.statusText || "HTTP error"}.`,
+      );
+    }
 
-export async function searchCity(query) {
-  const city = query.trim().replace(/\s+/g, " ");
-  if (!city) {
-    throw new Error("Please enter a city name.");
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Open-Meteo request failed:")) {
+      throw error;
+    }
+
+    const detail = error instanceof Error ? error.message : "Unknown network or response error.";
+    throw new Error(`Could not load data from Open-Meteo: ${detail}`);
+  }
+}
+
+export async function searchCity(name) {
+  const cityName = name.trim();
+  if (!cityName) {
+    return [];
   }
 
-  const knownCity = cityData[city.toLocaleLowerCase()];
-  if (knownCity) {
-    return { ...knownCity, forecast: [...knownCity.forecast] };
+  const url = `${geocodingUrl}?name=${encodeURIComponent(cityName)}&count=5`;
+  try {
+    const data = await fetchJson(url);
+    return (data.results ?? [])
+      .filter((result) => Number.isFinite(result.latitude) && Number.isFinite(result.longitude))
+      .map((result) => ({
+        name: result.name,
+        country: result.country ?? "Unknown country",
+        latitude: result.latitude,
+        longitude: result.longitude,
+        timezone: result.timezone ?? "UTC",
+        admin1: result.admin1 ?? "",
+      }));
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Unknown error.";
+    throw new Error(`City search failed. ${detail}`);
   }
+}
 
-  return {
-    city: city.replace(/\b\w/g, (letter) => letter.toLocaleUpperCase()),
-    country: "Sample data",
-    temperature: 20,
-    condition: "Partly sunny",
-    icon: "🌤️",
-    wind: 10,
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    forecast: [...genericForecast],
-  };
+export async function getForecast(latitude, longitude) {
+  const params = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    current: "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
+    daily: "weather_code,temperature_2m_max,temperature_2m_min",
+    timezone: "auto",
+  });
+
+  try {
+    return await fetchJson(`${forecastUrl}?${params}`);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Unknown error.";
+    throw new Error(`Weather forecast failed. ${detail}`);
+  }
 }

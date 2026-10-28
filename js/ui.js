@@ -1,13 +1,3 @@
-const forecastDays = Array.from({ length: 7 }, (_, index) => {
-  if (index === 0) {
-    return "Today";
-  }
-
-  const date = new Date();
-  date.setDate(date.getDate() + index);
-  return new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date);
-});
-
 function createElement(tagName, className, text) {
   const element = document.createElement(tagName);
   if (className) {
@@ -22,28 +12,63 @@ function createElement(tagName, className, text) {
 export function renderWeather(weather) {
   document.querySelector("#city-name").textContent = weather.city;
   document.querySelector("#city-country").textContent = weather.country;
-  document.querySelector("#current-temperature").textContent = `${weather.temperature}°`;
+  document.querySelector("#city-coordinate").textContent = [
+    formatCoordinate(weather.latitude, "N", "S"),
+    formatCoordinate(weather.longitude, "E", "W"),
+    formatTimeZone(weather.timeZone),
+  ].join(" · ");
+  document.querySelector("#current-temperature").textContent =
+    `${Math.round(weather.temperature)}${weather.temperatureUnit}`;
   document.querySelector("#current-condition").textContent = weather.condition;
   document.querySelector("#current-icon").textContent = weather.icon;
-  document.querySelector("#current-wind").textContent = `${weather.wind} km/h`;
+  document.querySelector("#current-wind").textContent = `${weather.wind} ${weather.windUnit}`;
+  document.querySelector("#current-humidity").textContent = `${weather.humidity}%`;
   renderLocalTime(weather.timeZone);
 
   const forecastGrid = document.querySelector("#forecast-grid");
   forecastGrid.replaceChildren(
-    ...weather.forecast.map(([high, low, icon], index) => {
+    ...weather.forecast.map((day, index) => {
       const card = createElement("article", "forecast-day");
-      const day = createElement("span", "forecast-name", forecastDays[index]);
-      const weatherIcon = createElement("span", "forecast-icon", icon);
+      const forecastDate = new Date(`${day.date}T12:00:00`);
+      const dayName = index === 0
+        ? "Today"
+        : new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(forecastDate);
+      const dayLabel = createElement("span", "forecast-name", dayName);
+      const weatherIcon = createElement("span", "forecast-icon", day.icon);
       weatherIcon.setAttribute("aria-hidden", "true");
+      weatherIcon.title = day.condition;
       const temperatures = createElement("div", "forecast-temperatures");
       temperatures.append(
-        createElement("span", "", `${high}°`),
-        createElement("span", "forecast-low", `${low}°`),
+        createElement("span", "", `${Math.round(day.high)}${day.temperatureUnit}`),
+        createElement("span", "forecast-low", `${Math.round(day.low)}${day.temperatureUnit}`),
       );
-      card.append(day, weatherIcon, temperatures);
+      card.setAttribute("aria-label", `${dayName}: ${day.condition}, high ${day.high}, low ${day.low}`);
+      card.append(dayLabel, weatherIcon, temperatures);
       return card;
     }),
   );
+}
+
+function formatCoordinate(value, positiveDirection, negativeDirection) {
+  const direction = value < 0 ? negativeDirection : positiveDirection;
+  return `${Math.abs(value).toFixed(4)}° ${direction}`;
+}
+
+function formatTimeZone(timeZone) {
+  const parts = new Intl.DateTimeFormat("en-NG", {
+    timeZone,
+    timeZoneName: "long",
+  }).formatToParts(new Date());
+  const longName = parts.find((part) => part.type === "timeZoneName")?.value;
+  const shortName = new Intl.DateTimeFormat("en-NG", {
+    timeZone,
+    timeZoneName: "short",
+  }).formatToParts(new Date()).find((part) => part.type === "timeZoneName")?.value;
+
+  if (!longName) {
+    return timeZone;
+  }
+  return shortName && shortName !== longName ? `${longName} (${shortName})` : longName;
 }
 
 function renderLocalTime(timeZone) {
@@ -51,6 +76,7 @@ function renderLocalTime(timeZone) {
     hour: "2-digit",
     minute: "2-digit",
     timeZone,
+    timeZoneName: "short",
   });
   document.querySelector("#local-time").textContent = formatter.format(new Date());
 }
@@ -83,7 +109,11 @@ export function renderFavourites(favourites, selectedCity, onSelect) {
     button.append(
       icon,
       copy,
-      createElement("span", "favourite-temperature", `${favourite.temperature}°`),
+      createElement(
+        "span",
+        "favourite-temperature",
+        `${Math.round(favourite.temperature)}${favourite.temperatureUnit ?? "°"}`,
+      ),
     );
     item.append(button);
     list.append(item);

@@ -51,7 +51,7 @@
             </div>
             <div class="today-chip">
               <span class="pulse-dot" aria-hidden="true"></span>
-              <span>Sample conditions</span>
+              <span>Live conditions</span>
             </div>
           </section>
 
@@ -59,15 +59,16 @@
             <div class="current-top">
               <div>
                 <p class="eyebrow eyebrow-light">CURRENT WEATHER</p>
-                <h2 id="city-name">Lisbon</h2>
-                <p class="location-line"><span aria-hidden="true">⌖</span> <span id="city-country">Portugal</span></p>
+                <h2 id="city-name">Loading weather…</h2>
+                <p class="location-line"><span aria-hidden="true">⌖</span> <span id="city-country">—</span></p>
+                <p class="location-detail" id="city-coordinate"></p>
               </div>
               <div class="weather-icon" id="current-icon" aria-hidden="true">☀️</div>
             </div>
             <div class="current-bottom">
               <div class="temperature-block">
-                <span class="temperature" id="current-temperature">22°</span>
-                <span class="condition" id="current-condition">Mostly sunny</span>
+                <span class="temperature" id="current-temperature">—</span>
+                <span class="condition" id="current-condition">Waiting for forecast</span>
               </div>
               <div class="weather-details">
                 <div class="detail-item">
@@ -77,6 +78,10 @@
                 <div class="detail-item">
                   <span class="detail-icon detail-clock" aria-hidden="true">◷</span>
                   <span><span class="detail-label">LOCAL TIME</span><strong id="local-time">--:--</strong></span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-icon" aria-hidden="true">％</span>
+                  <span><span class="detail-label">HUMIDITY</span><strong id="current-humidity">—</strong></span>
                 </div>
               </div>
             </div>
@@ -124,7 +129,7 @@
       <div class="status-message status-error" id="error-message" role="alert"></div>
 
       <footer class="page-footer">
-        <span>SAMPLE FORECAST DATA · NO LIVE WEATHER SERVICE CONNECTED</span>
+        <span>LIVE WEATHER DATA · POWERED BY OPEN-METEO</span>
         <span>☼ &nbsp; TAKE THE DAY AS IT COMES</span>
       </footer>
     </div>
